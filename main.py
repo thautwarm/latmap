@@ -13,18 +13,7 @@ from sortedcollections import SortedList
 from theme import Theme
 import theme
 
-keyword = QTextCharFormat()
-keyword.setForeground(Qt.darkBlue)
-keyword.setFontWeight(QFont.Bold)
-
-literal = QTextCharFormat()
-literal.setForeground(Qt.red)
-
-lead = QTextCharFormat()
-lead.setForeground(Qt.darkMagenta)
-
 parser = mk_parser()
-
 
 class LazyArray:
     __slots__ = ['data', 'gen']
