@@ -1,0 +1,85 @@
+%%inline
+from theme import Theme
+Keyword = Theme.Keyword
+Var = Theme.Var
+Literal = Theme.Literal
+Pattern = Theme.Pattern
+String = Theme.String
+Call = Theme.Call
+Type = Theme.Type
+
+
+handler = [None]
+def ss(*args):
+    args = iter(args)
+    f = handler[0]
+    _next = next
+    while True:
+        tk = _next(args, None)
+        if not tk:
+            return
+        style = _next(args)
+        f(tk, style)
+
+def s(tk, style):
+    handler[0](tk, style)
+
+def append(x, a):
+    x.append(a)
+    return x
+%%
+
+
+START := <BOF> toplevel? <EOF> { () }
+      ; 
+
+separated_list[sep, pat]
+    := pat { [$1] }
+    |  separated_list[sep, pat] sep pat { append($1, $3) }
+    ;
+
+list[pat]
+    := pat { [$1] }
+    |  list[pat] pat { append($1, $2) }
+    ;
+
+param :=  <identifier> { s($1, Var) }
+      | <identifier> ':' <identifier>
+        { ss($1, Var, $3, Type) }
+      ;
+
+toplevel
+    := head='let' vname=<identifier>
+       '=' expr
+       { ss(head, Keyword, vname, Pattern) }
+    |  head='let' fname=<identifier>
+       l='('  separated_list[',', param]? r=')'
+       '=' expr
+       {  ss(
+            head,  Keyword,
+            fname, Pattern,
+            l,    Literal,
+            r,    Literal
+           )
+        }
+        ;
+
+expr :=
+       <identifier> { s($1, Var) }
+     | expr l='(' separated_list[',', expr]? r=')'
+        { ss(l, Call, r, Call) }
+     | head='fun' l='(' separated_list[',', param] r=')' '->' 
+        expr
+        { ss(
+            head, Keyword, 
+            l,    Literal,
+            r,    Literal
+          )
+        }
+     | 'let' <identifier> '=' expr
+        { s($1, Keyword, $2, Pattern) }
+     ;
+
+
+unused := <space>
+       ;
