@@ -1,7 +1,7 @@
 import sys
 
 from itertools import islice
-from grammar_parser import mk_parser, Tokens, handler
+from grammar_parser import mk_parser, Tokens
 from grammar_lex import lexer, lexer_lazy_bytes, BOF, EOF
 
 from PyQt5.QtWidgets import *
@@ -9,11 +9,10 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.Qsci import *
 
-from sortedcollections import SortedList
+from sortedcontainers import SortedKeyList
 from theme import Theme
 import theme
 
-parser = mk_parser()
 
 class LazyArray:
     __slots__ = ['data', 'gen']
@@ -49,7 +48,7 @@ class My(QsciLexerCustom):
         super().__init__(parent)
         self.setDefaultFont(QFont("Consolas", 14))
 
-        for each in Theme:        
+        for each in Theme:
             for style in each.value:
                 if isinstance(style, QColor):
                     self.setColor(style, each.style_id)
@@ -63,11 +62,11 @@ class My(QsciLexerCustom):
 
         self.last_end = None
         self.filename = filename
-        self.intervals = SortedList()
+        self.intervals = SortedKeyList(key=lambda x: x[0])
         self.modified_point = None
 
     def description(self, style):
-        return f"style_{style}" # + Theme.name_of_style_id(style, "")
+        return f"style_{style}"  # + Theme.name_of_style_id(style, "")
 
     def language(self):
         return "SimpleLanguage"
@@ -90,18 +89,41 @@ class My(QsciLexerCustom):
         if last_end is None:
             assert start == 0
         else:
+            last_end = last_end
             p = last_end if last_end < start else start
             intervals = self.intervals
-            n = intervals.bisect_left(p) - 1
+            n = intervals.bisect_key_left(p)
             while len(intervals) != n:
-                start = intervals.pop()
+                start, _ = intervals.pop()
+            
+            start_, is_partial_ok = intervals.pop()
+            if is_partial_ok:
+                intervals.add((start_, True))
+            else:
+                start = start_
+
+        def _handler_many(*args):
+            args = iter(args)
+            handler = _handler
+            _next = next
+            while True:
+                tk = _next(args, None)
+                if not tk:
+                    return
+                style = _next(args)
+                handler(tk, style)
 
         def _handler(tk, s):
             print(f'{tk.offset} : {tk.value} <- {s}')
             self.startStyling(tk.offset)
             self.setStyling(len(tk.value), s.style_id)
 
-        handler[0] = _handler
+        def partial_ok():
+            nonlocal is_partial_ok
+            is_partial_ok = True
+
+
+        parser = mk_parser(s=_handler, ss=_handler_many, partial_ok=partial_ok)
 
         qt_bytes = editor.bytes(0, end)
         print(qt_bytes)
@@ -118,16 +140,15 @@ class My(QsciLexerCustom):
         maybe_error_token = bof_token
 
         while True:
+            is_partial_ok = False
             status, result = parser(None, tokens)
 
-            # print(maybe_error_token)
             print(result)
             if status:
-                
+
                 last_end = tokens.array[tokens.offset - 1].offset
-                intervals.add(last_start)
+                intervals.add((last_start, is_partial_ok))
                 break
-            
 
             if token_offset + 1 == tokens.offset:
                 err_span = len(maybe_error_token.value)
@@ -145,14 +166,14 @@ class My(QsciLexerCustom):
                 tokens.array[token_offset] = bof_token
 
                 if err_str_offset > block_end:
-                    intervals.add(last_start)
+                    intervals.add((last_start, False))
                     break
             else:
                 maybe_error_token = tokens.array[tokens.offset]
                 last_token = tokens.array[tokens.offset]
 
                 last_end = last_token.offset + len(last_token.value)
-                intervals.add(last_start)
+                intervals.add((last_start, is_partial_ok))
                 last_start = last_end + 1
 
                 bof_token.offset = last_start
@@ -162,53 +183,6 @@ class My(QsciLexerCustom):
 
         self.modified_point = -1
         self.last_end = last_end
-
-    #     prev_span = self.prev_span
-    #     if not prev_span:
-    #         prev_span = self.prev_span = start, end
-    #     prev_start, prev_end = prev_span
-
-    #     if start < self.prev_start
-    #     editor = self.parent()
-    #     token_gen = self.lexer(
-    #         "filename", editor.bytes(start, editor.length()))
-    #     lazy_array = LazyArray(token_gen)
-    #     tokens = Tokens(lazy_array)
-    #     self.parser(tokens)
-
-    #     self.objs
-
-        # text = self.parent().text()
-        # _caches.add(text)
-        # print(id(text))
-        # def token(x, s):
-        #     n = len(bytearray(x.value, "utf-8"))
-        #     print('format: ', x.offset, n, s)
-        #     self.setFormat(x.offset, n, s)
-
-        # def tokens(*args):
-        #     for i in range(0, len(args), 2):
-        #         tk = args[i]
-        #         s = args[i+1]
-        #         token(tk, s)
-
-    # def highlightBlock(self, text):
-    #     def token(x, s):
-    #         n = len(bytearray(x.value, "utf-8"))
-    #         print('format: ', x.offset, n, s)
-    #         self.setFormat(x.offset, n, s)
-    #     def tokens(*args):
-    #         for i in range(0, len(args), 2):
-    #             tk = args[i]
-    #             s = args[i+1]
-    #             token(tk, s)
-    #     p = mk_parser(token, tokens, keyword, lead, literal)
-    #     print(text)
-    #     st, x = p(None, Tokens(lexer("filename", text)))
-    #     if not st:
-    #         off, x = x
-
-    #     print(x)
 
 
 class TestApp(QMainWindow):

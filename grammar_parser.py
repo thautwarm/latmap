@@ -41,25 +41,10 @@ String = Theme.String
 Call = Theme.Call
 Type = Theme.Type
 
-
-handler = [None]
-def ss(*args):
-    args = iter(args)
-    f = handler[0]
-    _next = next
-    while True:
-        tk = _next(args, None)
-        if not tk:
-            return
-        style = _next(args)
-        f(tk, style)
-
-def s(tk, style):
-    handler[0](tk, style)
-
 def append(x, a):
     x.append(a)
     return x
+
 from typing import Generic, TypeVar
 T = TypeVar('T')
 
@@ -160,7 +145,7 @@ builtin_cons = Cons
 builtin_nil = _nil
 builtin_mk_ast = AST
 
-def mk_parser():
+def mk_parser(s, ss, partial_ok):
     pass
 
     def rbnf_named_lr_step_expr(rbnf_tmp_0, builtin_state, builtin_tokens):
@@ -503,7 +488,7 @@ def mk_parser():
                 lcl_3 = builtin_tokens.array[(builtin_tokens.offset + 0)]
                 lcl_3 = lcl_3.idint
                 if (lcl_3 == 4):
-                    lcl_4 = rbnf_named_parse_toplevel(builtin_state, builtin_tokens)
+                    lcl_4 = rbnf_named_parse_toplevel_wrap(builtin_state, builtin_tokens)
                     rbnf_named__check_1 = lcl_4
                     lcl_4 = rbnf_named__check_1[0]
                     lcl_4 = (lcl_4 == False)
@@ -537,16 +522,14 @@ def mk_parser():
                         lcl_4 = lcl_5
                     lcl_2 = lcl_4
                 elif (lcl_3 == 1):
-                    lcl_4 = ()
-                    rbnf_tmp_1_ = lcl_4
                     _rbnf_old_offset = builtin_tokens.offset
                     _rbnf_cur_token = builtin_tokens.array[_rbnf_old_offset]
                     builtin_tokens.offset = (_rbnf_old_offset + 1)
                     lcl_4 = _rbnf_cur_token
                     rbnf_tmp_1 = lcl_4
                     lcl_4 = ()
-                    rbnf_tmp_2_ = lcl_4
-                    lcl_4 = (True, rbnf_tmp_2_)
+                    rbnf_tmp_1_ = lcl_4
+                    lcl_4 = (True, rbnf_tmp_1_)
                     lcl_2 = lcl_4
                 else:
                     lcl_4 = (rbnf_named__off_1, 'START lookahead failed')
@@ -625,7 +608,7 @@ def mk_parser():
                         else:
                             lcl_6 = rbnf_named__check_3[1]
                             rbnf_tmp_3 = lcl_6
-                            lcl_6 = s(rbnf_tmp_0, Keyword, rbnf_tmp_1, Pattern)
+                            lcl_6 = ss(rbnf_tmp_0, Keyword, rbnf_tmp_1, Pattern)
                             rbnf_tmp_1_ = lcl_6
                             lcl_6 = rbnf_named_lr_loop_expr(rbnf_tmp_1_, builtin_state, builtin_tokens)
                             lcl_5 = lcl_6
@@ -1066,6 +1049,22 @@ def mk_parser():
                     lcl_10 = (False, lcl_10)
                     lcl_2 = lcl_10
                 lcl_1 = lcl_2
+            lcl_0 = lcl_1
+        return lcl_0
+
+    def rbnf_named_parse_toplevel_wrap(builtin_state, builtin_tokens):
+        lcl_0 = rbnf_named_parse_toplevel(builtin_state, builtin_tokens)
+        rbnf_named__check_0 = lcl_0
+        lcl_0 = rbnf_named__check_0[0]
+        lcl_0 = (lcl_0 == False)
+        if lcl_0:
+            lcl_0 = rbnf_named__check_0
+        else:
+            lcl_1 = rbnf_named__check_0[1]
+            rbnf_tmp_0 = lcl_1
+            lcl_1 = partial_ok()
+            rbnf_tmp_1_ = lcl_1
+            lcl_1 = (True, rbnf_tmp_1_)
             lcl_0 = lcl_1
         return lcl_0
     return rbnf_named_parse_START

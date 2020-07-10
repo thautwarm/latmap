@@ -1,3 +1,4 @@
+%parametric s, ss, partial_ok
 %%inline
 from theme import Theme
 Keyword = Theme.Keyword
@@ -8,30 +9,19 @@ String = Theme.String
 Call = Theme.Call
 Type = Theme.Type
 
-
-handler = [None]
-def ss(*args):
-    args = iter(args)
-    f = handler[0]
-    _next = next
-    while True:
-        tk = _next(args, None)
-        if not tk:
-            return
-        style = _next(args)
-        f(tk, style)
-
-def s(tk, style):
-    handler[0](tk, style)
-
 def append(x, a):
     x.append(a)
     return x
+
 %%
 
 
-START := <BOF> toplevel? <EOF> { () }
+
+START := <BOF> toplevel_wrap <EOF> { () }
+      |  <BOF> <EOF> { () }
       ; 
+
+toplevel_wrap := toplevel { partial_ok() };
 
 separated_list[sep, pat]
     := pat { [$1] }
@@ -77,7 +67,7 @@ expr :=
           )
         }
      | 'let' <identifier> '=' expr
-        { s($1, Keyword, $2, Pattern) }
+        { ss($1, Keyword, $2, Pattern) }
      ;
 
 
