@@ -1,8 +1,8 @@
 import sys
 
 from itertools import islice
-from grammar_parser import mk_parser, Tokens
-from grammar_lex import lexer, lexer_lazy_bytes, BOF, EOF
+from lclisp_parser import mk_parser, Tokens
+from lclisp_lex import lexer, lexer_lazy_bytes, BOF, EOF
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *

@@ -466,7 +466,7 @@ cdef class OrthogonalIntervals:
             if not_error:
                 first = node.key
                 start = first.start
-                affected.append(first)                
+                affected.append(first)
                 break
             
             first = node.key
@@ -486,6 +486,7 @@ cdef class OrthogonalIntervals:
             not_error = node.value
             if not_error:
                 affected.append(interval)
+                end = interval.end
                 break
             affected.append(interval)
             end = interval.end

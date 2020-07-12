@@ -94,6 +94,15 @@ print(intervals.affect_edit(13, 0, 2))
 
 print(list(intervals))
 
+
+intervals = avl.OrthogonalIntervals()
+
+intervals.insert(0, 17, True)
+intervals.insert(17, 33, True)
+intervals.insert(33, 36, False)
+print(intervals.affect_edit(15, 0, 2))
+
+print(list(intervals))
 # print(intervals.affect_delete(13, 11))
 # print([node.key for node in intervals])
 ## <>

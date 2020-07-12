@@ -1,0 +1,54 @@
+# simple LISP syntax hightlighting
+%parametric s, ss, partial_ok
+
+%parametric s, ss, partial_ok
+%%inline
+from theme import Theme
+Keyword = Theme.Keyword
+Var = Theme.Var
+Literal = Theme.Literal
+Pattern = Theme.Pattern
+String = Theme.String
+Call = Theme.Call
+Type = Theme.Type
+
+def append(x, a):
+    x.append(a)
+    return x
+
+%%
+
+
+START := <BOF> toplevel <EOF>
+      |  <BOF> <EOF>
+      ;
+    
+toplevel := expr  { partial_ok() } ;
+
+
+list[pat]
+    := pat { [$1] }
+    |  list[pat] pat { append($1, $2) }
+    ;
+
+arg := <identifier> { s($1, Type) } ;
+
+expr := # define func
+        l='(' h='define' fname=<identifier> 
+           ll='(' list[arg]? rr=')' expr
+        r=')'
+       { 
+        ss(
+            l, String, r, String, ll, String, rr, String,
+            h, Keyword, fname, Pattern
+         )
+       }
+     # call func
+     | '(' list[expr]? ')'
+       { ss($1, Call, $3, Call) }
+     
+     | <identifier> 
+       { s($1, Var) }
+     ;
+
+unused := <space> ;
