@@ -66,8 +66,8 @@ expr :=
             r,    Literal
           )
         }
-     | 'let' <identifier> '=' expr
-        { ss($1, Keyword, $2, Pattern) }
+     | 'let' <identifier> '=' expr 'in' expr
+        { ss($1, Keyword, $2, Pattern, $3, String, $5, Keyword) }
      ;
 
 

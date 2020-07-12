@@ -16,52 +16,10 @@ import theme
 import itertools
 import numbers
 import time as py_time
+from pyximport import install
+install()
+import avl
 
-
-class MutInt(numbers.Number):
-    __slots__ = ['i']
-    def __init__(self, i):
-        numbers.Number.__init__(i)
-        self.i = i
-    
-    def __repr__(self):
-        return repr(self.i)
-    
-    def __eq__(self, o):
-        return isinstance(o, MutInt) and self.i == o.i or self.i == o
-
-    def __ge__(self, o):
-        return isinstance(o, MutInt) and self.i >= o.i or self.i >= o
-
-    def __le__(self, o):
-        return isinstance(o, MutInt) and self.i <= o.i or self.i <= o
-
-
-    def __gt__(self, o):
-        return isinstance(o, MutInt) and self.i > o.i or self.i > o
-
-    def __lt__(self, o):
-        return isinstance(o, MutInt) and self.i < o.i or self.i < o
-    
-    def __add__(self, o):
-        return _mki(self.i + (isinstance(o, MutInt) and o.i or o))
-    
-    def __sub__(self, o):
-        return _mki(self.i - (isinstance(o, MutInt) and o.i or o))
-    
-    def __mul__(self, o):
-        return _mki(self.i * (isinstance(o, MutInt) and o.i or o))
-    
-    def __truediv__(self, o):
-        return self.i / (isinstance(o, MutInt) and o.i or o)
-    
-    def __floordiv__(self, o):
-        return _mki(self.i // (isinstance(o, MutInt) and o.i or o))
-    
-    def __hash__(self):
-        return hash((MutInt, self.i))
-
-_mki = MutInt
 
 class LazyArray:
     __slots__ = ['data', 'gen']
@@ -110,9 +68,9 @@ class My(QsciLexerCustom):
         parent.SCN_MODIFIED.connect(self._modify_signal)
 
         self.filename = filename
-        self.intervals = IntervalTree()
-        self.text_changing_timer = None
+        self.intervals = avl.OrthogonalIntervals()
         self.diffs = []
+        self.edit_point = None
 
         
     def description(self, style):
@@ -133,58 +91,70 @@ class My(QsciLexerCustom):
             *_):
 
         if typ & QsciScintilla.SC_MOD_INSERTTEXT:
-            self.diffs.append((start, change_len))
-        elif typ & QsciScintilla.SC_MOD_DELETETEXT:
-            self.diffs.append((start, -change_len))
-
-    def _modify(self):
-        if self.text_changing_timer is None:
-            self.text_changing_timer = py_time.time()
-        elif py_time.time() - self.text_changing_timer > 0.08:
             diffs = self.diffs
             if not diffs:
-                self.text_changing_timer = None
-                return
-            print(diffs)
-            for head, deltas in itertools.groupby(diffs, key=lambda x: x[0]):
-                change_len = 0
-                affected_old_bound = head + 1
-                new_buffer = 0
-                for _, delta in deltas:
-                    change_len += delta
-                    if delta < 0:
-                        delta = -delta
-                        if not new_buffer:
-                            affected_old_bound += delta
-                        elif delta > new_buffer:
-                            affected_old_bound += delta - new_buffer
-                            new_buffer = 0
-                        else:
-                            new_buffer -= delta
-                    else:
-                        new_buffer += delta
-
-                intervals = self.intervals
-                
-                print('all intervals', intervals)
-                affected = sorted(intervals[head: affected_old_bound])
-                print('affected intervals', affected)
-                if affected:
-                    start = affected[0].begin.i
-                    end = affected[-1].end.i
-                    intervals.remove_overlap(start, end)
-                else:
-                    start = head
-                    end = self.parent().length()
-                
-                for adjust in self.intervals[end:]:
-                    adjust.begin.i += change_len
-                    adjust.end.i += change_len
-                
-                self._set_style(start, end)
-            diffs.clear()
-            self.text_changing_timer = None
+                self.edit_point = start
+            elif self.edit_point != start:
+                self._modify()
+                # then diffs are cleared
+                self.edit_point = start
+            diffs.append(change_len)
+        elif typ & QsciScintilla.SC_MOD_DELETETEXT:
+            diffs = self.diffs            
+            if not diffs:
+                self.edit_point = start
+            elif self.edit_point != start:
+                self._modify()
+                # then diffs are cleared
+                self.edit_point = start
+            diffs.append(-change_len)
+            
+    def _modify(self):
+        diffs = self.diffs
+        if not diffs:
+            return
         
+        edit_point = self.edit_point
+        change_len = 0
+        delete_delta = 0
+        new_buffer = 0
+
+        for delta in diffs:
+            change_len += delta
+            if delta < 0:
+                delta = -delta
+                if not new_buffer:
+                    delete_delta += delta
+                elif delta > new_buffer:
+                    delete_delta += delta - new_buffer
+                    new_buffer = 0
+                else:
+                    new_buffer -= delta
+            else:
+                new_buffer += delta
+        
+            
+        intervals = self.intervals
+        insert_delta = change_len + delete_delta
+    
+        print(f'edit({edit_point}, {delete_delta}, {insert_delta})..')
+        print('before edit', [node for node in intervals])
+        any_affected = intervals.affect_edit(edit_point, delete_delta, insert_delta)
+        print('after edit', [node for node in intervals])
+        
+        if any_affected is None:
+            print('no affected')
+            assert change_len > 0
+            start = edit_point
+            end = start + change_len
+        else:
+            print('affected', any_affected)
+            start, end = any_affected 
+        
+        if start != end:
+            self._set_style(start, end)
+        diffs.clear()
+    
         # print('=====')
         # print('start', start)
         # print('flag', hex(typ))
@@ -199,7 +169,7 @@ class My(QsciLexerCustom):
         #     diffs.append((start, -change_len))
 
     def _set_style(self, start, end):
-        print(f'[{start}, {end})')
+        print(f'START = [{start}, {end})')
         
         def _handler_many(*args):
             args = iter(args)
@@ -224,12 +194,9 @@ class My(QsciLexerCustom):
         parser = mk_parser(s=_handler, ss=_handler_many, partial_ok=partial_ok)
         editor = self.parent()
         qt_bytes = editor.bytes(0, editor.length())
-        print(qt_bytes)
         qt_bytes = qt_bytes[start:end]
         print(qt_bytes)
-        # qt_bytes = editor.bytes(start, end - 1)
-
-        print(qt_bytes)
+        
         token_generator = lexer_lazy_bytes(self.filename, qt_bytes)
         lazy_array = LazyArray(token_generator)
 
@@ -248,8 +215,14 @@ class My(QsciLexerCustom):
             status, _ = parser(None, tokens)
             if status:
                 last_token = tokens.array[tokens.offset - 1]
-                last_end = start + last_token.offset + len(last_token.value) + 1
-                intervals[_mki(last_start):_mki(last_end)] = None
+                last_end = start + last_token.offset + len(last_token.value)
+                if last_end > last_start:
+                    print(
+                        qt_bytes[last_start-start:last_end-start],
+                        'inserted as an interval',
+                        f'[{last_start}, {last_end})'
+                    )
+                    intervals.insert(last_start, last_end, False)
                 break
 
             if token_offset + 1 == tokens.offset:
@@ -269,14 +242,22 @@ class My(QsciLexerCustom):
             else:
                 maybe_error_token = tokens.array[tokens.offset]
                 last_end = maybe_error_token.offset
-                intervals[_mki(last_start): _mki(last_end)] = None
-                last_start = last_end
-                bof_token.offset = last_start
+                if is_partial_ok and last_end > last_start:
+                    print(last_start, last_end)
+                    intervals.insert(last_start, last_end, True)
+                    print(
+                        qt_bytes[last_start-start:last_end-start],
+                        'inserted as an interval',
+                        f'[{last_start}, {last_end})'
+                    )
+                    last_start = last_end
+                bof_token.offset = last_end
                 token_offset = tokens.offset - 1
                 tokens.offset = token_offset
                 tokens.array[token_offset] = bof_token
-    
-        print('updated', intervals)
+        
+        print('updated', [node for node in intervals])
+        print('====')
 
 class TestApp(QMainWindow):
     def __init__(self):

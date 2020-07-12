@@ -164,7 +164,7 @@ BOF = 0
 REGEX = '(\\s+)|([a-zA-Z][a-zA-Z_]*)|(=)|(:)|(\\->)|(,)|(\\))|(\\()'
 REGEX_STR = __import__('re').compile(REGEX)
 REGEX_BYTES = __import__('re').compile(REGEX.encode())
-IGNORES = (11,)
-UNIONALL_INFO = ((None, None), (11, None), (2, {'let': 4, 'fun': 9}), (5, None), (3, None), (10, None), (6, None), (8, None), (7, None))
-UNIONALL_INFO_BYTES = ((None, None), (11, None), (2, {b'let': 4, b'fun': 9}), (5, None), (3, None), (10, None), (6, None), (8, None), (7, None))
-numbering = {'BOF': 0, 'EOF': 1, 'identifier': 2, 'quote :': 3, 'quote let': 4, 'quote =': 5, 'quote ,': 6, 'quote (': 7, 'quote )': 8, 'quote fun': 9, 'quote ->': 10, 'space': 11}
+IGNORES = (12,)
+UNIONALL_INFO = ((None, None), (12, None), (2, {'fun': 9, 'in': 11, 'let': 4}), (5, None), (3, None), (10, None), (6, None), (8, None), (7, None))
+UNIONALL_INFO_BYTES = ((None, None), (12, None), (2, {b'fun': 9, b'in': 11, b'let': 4}), (5, None), (3, None), (10, None), (6, None), (8, None), (7, None))
+numbering = {'BOF': 0, 'EOF': 1, 'identifier': 2, 'quote :': 3, 'quote let': 4, 'quote =': 5, 'quote ,': 6, 'quote (': 7, 'quote )': 8, 'quote fun': 9, 'quote ->': 10, 'quote in': 11, 'space': 12}

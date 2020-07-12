@@ -608,9 +608,38 @@ def mk_parser(s, ss, partial_ok):
                         else:
                             lcl_6 = rbnf_named__check_3[1]
                             rbnf_tmp_3 = lcl_6
-                            lcl_6 = ss(rbnf_tmp_0, Keyword, rbnf_tmp_1, Pattern)
-                            rbnf_tmp_1_ = lcl_6
-                            lcl_6 = rbnf_named_lr_loop_expr(rbnf_tmp_1_, builtin_state, builtin_tokens)
+                            try:
+                                _rbnf_cur_token = builtin_tokens.array[builtin_tokens.offset]
+                                if (_rbnf_cur_token.idint is 11):
+                                    builtin_tokens.offset += 1
+                                else:
+                                    _rbnf_cur_token = None
+                            except IndexError:
+                                _rbnf_cur_token = None
+                            lcl_6 = _rbnf_cur_token
+                            rbnf_tmp_4 = lcl_6
+                            lcl_6 = (rbnf_tmp_4 is None)
+                            if lcl_6:
+                                lcl_7 = builtin_tokens.offset
+                                lcl_7 = (lcl_7, 'quote in not match')
+                                lcl_7 = builtin_cons(lcl_7, builtin_nil)
+                                lcl_7 = (False, lcl_7)
+                                lcl_6 = lcl_7
+                            else:
+                                lcl_7 = rbnf_named_parse_expr(builtin_state, builtin_tokens)
+                                rbnf_named__check_5 = lcl_7
+                                lcl_7 = rbnf_named__check_5[0]
+                                lcl_7 = (lcl_7 == False)
+                                if lcl_7:
+                                    lcl_7 = rbnf_named__check_5
+                                else:
+                                    lcl_8 = rbnf_named__check_5[1]
+                                    rbnf_tmp_5 = lcl_8
+                                    lcl_8 = ss(rbnf_tmp_0, Keyword, rbnf_tmp_1, Pattern, rbnf_tmp_2, String, rbnf_tmp_4, Keyword)
+                                    rbnf_tmp_1_ = lcl_8
+                                    lcl_8 = rbnf_named_lr_loop_expr(rbnf_tmp_1_, builtin_state, builtin_tokens)
+                                    lcl_7 = lcl_8
+                                lcl_6 = lcl_7
                             lcl_5 = lcl_6
                         lcl_4 = lcl_5
                     lcl_3 = lcl_4
