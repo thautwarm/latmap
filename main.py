@@ -10,7 +10,6 @@ from PyQt5.QtGui import *
 from PyQt5.Qsci import *
 
 from sortedcontainers import SortedKeyList
-from intervaltree import Interval, IntervalTree
 from theme import Theme
 import theme
 import itertools
@@ -271,8 +270,8 @@ class TestApp(QMainWindow):
 
         editor = self.editor = QsciScintilla(self)
 
-        self.__lexer = My(editor)
-        editor.setLexer(self.__lexer)
+        self._lexer = My(editor)
+        editor.setLexer(self._lexer)
         self.__lyt.addWidget(editor)
 
         self.setWindowTitle("frontend-for-free")
