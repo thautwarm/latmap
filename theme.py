@@ -46,7 +46,7 @@ class Theme(Enum):
     Comment = [color("#EE6850")]
     Literal = [color("#66CD00")]
     Keyword = [color("#CD3278")]
-    String = [color("#D15FEE")]
+    String = [color("#ABCD12")]
     Var = [color("#1874CD")]
     Pattern = [color("#473C8B")]
     Call = [color("#6959CD")]

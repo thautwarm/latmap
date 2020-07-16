@@ -1,8 +1,8 @@
 from lib import *
-import mylisp_lex
-import mylisp_parser
+import rbnf_lex
+import rbnf_parser
 app = QApplication(sys.argv)
 QApplication.setStyle(QStyleFactory.create('Fusion'))
-test = MyEditor(mylisp_parser, mylisp_lex)
+test = MyEditor(rbnf_parser, rbnf_lex)
 test.show()
 sys.exit(app.exec_())

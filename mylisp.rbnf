@@ -1,0 +1,69 @@
+# simple LISP syntax hightlighting
+
+%parametric s, ss, partial_ok
+
+%%inline
+
+from theme import Theme
+
+Keyword = Theme.Keyword
+
+Var = Theme.Var
+
+Literal = Theme.Literal
+
+Pattern = Theme.Pattern
+
+String = Theme.String
+
+Call = Theme.Call
+
+Type = Theme.Type
+
+
+
+def append(x, a):
+
+    x.append(a)
+
+    return x
+
+
+
+%%
+
+
+
+list[arg] := arg          { [$1] }
+
+          | list[arg] arg { append($1, $2) }
+
+          ;
+
+
+
+
+arg := <identifier> { s($1, Var) } ;
+
+
+lisp := '(' list[lisp] ')' { ss($1, Call, $3, Call) }
+
+     |  <identifier>       { s($1, Var) }
+
+     |  l='(' head='define' fname=<identifier> ll='(' list[arg] rr=')' lisp r=')'
+
+        { ss(l, String,
+             r, String, 
+             head, Keyword,
+             fname, Var,
+             ll, String, 
+             rr, String)
+        }
+
+     ;
+
+      
+
+START := <BOF> lisp <EOF> { partial_ok() }
+      | <BOF> <EOF> { () }
+      ; 
